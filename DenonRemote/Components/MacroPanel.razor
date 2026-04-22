@@ -1,0 +1,46 @@
+@inject MacroService MacroService
+@implements IDisposable
+
+@if (MacroService.Macros.Count > 0)
+{
+    <div class="section">
+        <span class="section-label">Actions</span>
+        <div class="macro-grid">
+            @foreach (var macro in MacroService.Macros)
+            {
+                var captured    = macro;
+                var isRunning   = MacroService.RunningMacro == captured;
+                var otherActive = MacroService.RunningMacro is not null && !isRunning;
+
+                <button class="macro-btn @(isRunning ? "running" : "") @(otherActive ? "dimmed" : "")"
+                        @onclick="() => Toggle(captured)">
+                    <span class="macro-icon">@macro.Icon</span>
+                    <span class="macro-name">@macro.Name</span>
+                </button>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private Task Toggle(DenonRemote.Models.MacroDefinition macro)
+    {
+        if (MacroService.RunningMacro == macro)
+        {
+            MacroService.Cancel();
+            return Task.CompletedTask;
+        }
+        return MacroService.ExecuteAsync(macro);
+    }
+
+    protected override void OnInitialized() =>
+        MacroService.StateChanged += OnMacroStateChanged;
+
+    private async void OnMacroStateChanged()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() =>
+        MacroService.StateChanged -= OnMacroStateChanged;
+}

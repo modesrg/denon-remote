@@ -1,0 +1,106 @@
+@page "/settings"
+@using DenonRemote.Services.Interfaces
+@rendermode InteractiveServer
+@inject SettingsService SettingsService
+@inject IReceiverStateService StateService
+@inject NavigationManager Nav
+
+<div class="container">
+    <header class="header">
+        <div class="header-left">
+            <span class="brand">Denon</span>
+            <span class="model">Settings</span>
+        </div>
+        <a href="/" class="settings-back">← Back</a>
+    </header>
+
+    <div class="section">
+        <span class="section-label">Receiver</span>
+
+        <div class="settings-field">
+            <label class="settings-label">IP Address</label>
+            <input class="settings-input" type="text"
+                   placeholder="http://192.168.1.x"
+                   @bind="_baseUrl" />
+        </div>
+
+        <div class="settings-field">
+            <label class="settings-label">Telnet Port</label>
+            <input class="settings-input" type="number"
+                   placeholder="23"
+                   @bind="_telnetPort" />
+        </div>
+    </div>
+
+    <div class="section">
+        <span class="section-label">Status</span>
+        <div class="settings-status">
+            <span class="settings-status-dot @(IsConnected ? "ok" : "err")"></span>
+            <span class="settings-status-text">
+                @(IsConnected ? "Connected" : "Disconnected")
+            </span>
+        </div>
+    </div>
+
+    <div class="section">
+        <button class="settings-save @(_saved ? "saved" : "")" @onclick="Save" disabled="@_saving">
+            @if (_saving)
+            {
+                <span>Saving…</span>
+            }
+            else if (_saved)
+            {
+                <span>✓ Saved — reconnecting</span>
+            }
+            else
+            {
+                <span>Save & Reconnect</span>
+            }
+        </button>
+        @if (_error is not null)
+        {
+            <span class="settings-error">@_error</span>
+        }
+    </div>
+</div>
+
+@code {
+    private string _baseUrl    = "";
+    private int    _telnetPort = 23;
+    private bool   _saving     = false;
+    private bool   _saved      = false;
+    private string? _error     = null;
+
+    private bool IsConnected => StateService.CurrentState.IsConnected;
+
+    protected override void OnInitialized()
+    {
+        _baseUrl    = SettingsService.Current.BaseUrl;
+        _telnetPort = SettingsService.Current.TelnetPort;
+    }
+
+    private async Task Save()
+    {
+        _error  = null;
+        _saving = true;
+
+        try
+        {
+            var uri = new Uri(_baseUrl);
+            await SettingsService.SaveAsync(new ReceiverSettings
+            {
+                BaseUrl    = _baseUrl.TrimEnd('/'),
+                TelnetPort = _telnetPort,
+            });
+            _saved = true;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Invalid settings: {ex.Message}";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}

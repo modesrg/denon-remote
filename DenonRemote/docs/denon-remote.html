@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Denon Remote</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --surface: #111114;
+    --surface2: #18181d;
+    --border: #222228;
+    --accent: #c8f065;
+    --accent2: #65f0c8;
+    --muted: #44444f;
+    --text: #e8e8f0;
+    --text-dim: #7070808;
+    --danger: #f06565;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+  }
+
+  /* Header */
+  .header {
+    background: var(--surface);
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .brand {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .model {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* Section wrapper */
+  .section {
+    background: var(--surface);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .section-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  /* Volume Section */
+  .volume-display {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+
+  .volume-number {
+    font-family: 'Syne', sans-serif;
+    font-size: 4rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text);
+    letter-spacing: -0.03em;
+  }
+
+  .volume-unit {
+    font-size: 0.75rem;
+    color: var(--muted);
+    padding-bottom: 0.5rem;
+  }
+
+  .volume-bar-track {
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    position: relative;
+    overflow: visible;
+  }
+
+  .volume-bar-fill {
+    height: 100%;
+    width: 62%;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    border-radius: 2px;
+    position: relative;
+  }
+
+  .volume-bar-fill::after {
+    content: '';
+    position: absolute;
+    right: -1px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  .volume-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  .vol-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: var(--text);
+  }
+
+  .vol-btn:hover {
+    background: var(--border);
+    border-color: var(--muted);
+  }
+
+  .vol-btn.mute {
+    color: var(--danger);
+    border-color: rgba(240, 101, 101, 0.2);
+  }
+
+  .vol-btn.mute:hover {
+    background: rgba(240, 101, 101, 0.1);
+    border-color: var(--danger);
+  }
+
+  .btn-label {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-icon {
+    font-size: 1.1rem;
+  }
+
+  /* Input Selector */
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .input-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .input-btn:hover {
+    background: var(--border);
+    border-color: var(--muted);
+  }
+
+  .input-btn.active {
+    background: rgba(200, 240, 101, 0.08);
+    border-color: var(--accent);
+  }
+
+  .input-icon {
+    font-size: 1rem;
+  }
+
+  .input-name {
+    font-size: 0.7rem;
+    color: var(--text);
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+
+  .input-btn.active .input-name {
+    color: var(--accent);
+  }
+
+  .input-sub {
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Sound Mode */
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .mode-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mode-btn:hover {
+    background: var(--border);
+  }
+
+  .mode-btn.active {
+    background: rgba(101, 240, 200, 0.08);
+    border-color: var(--accent2);
+  }
+
+  .mode-icon {
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 20px;
+  }
+
+  .speaker-dot {
+    width: 4px;
+    border-radius: 2px;
+    background: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .mode-btn.active .speaker-dot {
+    background: var(--accent2);
+  }
+
+  /* Stereo: 2 dots */
+  .stereo .speaker-dot:nth-child(1) { height: 14px; }
+  .stereo .speaker-dot:nth-child(2) { height: 14px; }
+
+  /* 5.1: 6 dots of varying heights */
+  .surround .speaker-dot:nth-child(1) { height: 10px; }
+  .surround .speaker-dot:nth-child(2) { height: 18px; }
+  .surround .speaker-dot:nth-child(3) { height: 20px; }
+  .surround .speaker-dot:nth-child(4) { height: 18px; }
+  .surround .speaker-dot:nth-child(5) { height: 10px; }
+  .surround .speaker-dot:nth-child(6) { height: 6px; width: 3px; }
+
+  .mode-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.05em;
+  }
+
+  .mode-btn.active .mode-name {
+    color: var(--accent2);
+  }
+
+  .mode-desc {
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+
+  /* Footer */
+  .footer {
+    background: var(--surface);
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .zone-label {
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .zone-toggle {
+    display: flex;
+    gap: 6px;
+  }
+
+  .zone-pill {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .zone-pill.active {
+    background: rgba(200, 240, 101, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Channel levels strip */
+  .channel-levels {
+    display: flex;
+    gap: 6px;
+    align-items: flex-end;
+    height: 32px;
+  }
+
+  .channel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+  }
+
+  .channel-bar {
+    width: 100%;
+    border-radius: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .channel-bar-fill {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: height 0.3s ease;
+  }
+
+  .ch-fl .channel-bar { height: 22px; }
+  .ch-fl .channel-bar-fill { height: 85%; background: var(--accent); }
+
+  .ch-c .channel-bar { height: 22px; }
+  .ch-c .channel-bar-fill { height: 75%; background: var(--accent2); }
+
+  .ch-fr .channel-bar { height: 22px; }
+  .ch-fr .channel-bar-fill { height: 85%; background: var(--accent); }
+
+  .ch-sl .channel-bar { height: 22px; }
+  .ch-sl .channel-bar-fill { height: 55%; background: rgba(200,240,101,0.5); }
+
+  .ch-sr .channel-bar { height: 22px; }
+  .ch-sr .channel-bar-fill { height: 55%; background: rgba(200,240,101,0.5); }
+
+  .ch-sub .channel-bar { height: 22px; }
+  .ch-sub .channel-bar-fill { height: 65%; background: rgba(101,240,200,0.5); }
+
+  .channel-label {
+    font-size: 0.48rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-left">
+      <span class="brand">Denon</span>
+      <span class="model">AVR-X3300W</span>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+
+  <!-- Volume -->
+  <div class="section">
+    <span class="section-label">Volume</span>
+    <div class="volume-display">
+      <span class="volume-number">42</span>
+      <span class="volume-unit">dB</span>
+    </div>
+    <div class="volume-bar-track">
+      <div class="volume-bar-fill"></div>
+    </div>
+    <div class="volume-controls">
+      <div class="vol-btn">
+        <span class="btn-label">▼ &nbsp;VOL</span>
+      </div>
+      <div class="vol-btn mute">
+        <span class="btn-label">✕ &nbsp;MUTE</span>
+      </div>
+      <div class="vol-btn">
+        <span class="btn-label">▲ &nbsp;VOL</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Input Selector -->
+  <div class="section">
+    <span class="section-label">Input</span>
+    <div class="input-grid">
+      <div class="input-btn active">
+        <span class="input-icon">📺</span>
+        <span class="input-name">HDMI 1</span>
+        <span class="input-sub">TV / Apple TV</span>
+      </div>
+      <div class="input-btn">
+        <span class="input-icon">💿</span>
+        <span class="input-name">BD / DVD</span>
+        <span class="input-sub">Blu-ray</span>
+      </div>
+      <div class="input-btn">
+        <span class="input-icon">🎮</span>
+        <span class="input-name">GAME</span>
+        <span class="input-sub">Console</span>
+      </div>
+      <div class="input-btn">
+        <span class="input-icon">🎵</span>
+        <span class="input-name">NET</span>
+        <span class="input-sub">Streaming</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sound Mode -->
+  <div class="section">
+    <span class="section-label">Sound Mode</span>
+    <div class="mode-tabs">
+      <div class="mode-btn">
+        <div class="mode-icon stereo">
+          <div class="speaker-dot"></div>
+          <div class="speaker-dot"></div>
+        </div>
+        <span class="mode-name">STEREO</span>
+        <span class="mode-desc">Pure 2.0</span>
+      </div>
+      <div class="mode-btn active">
+        <div class="mode-icon surround">
+          <div class="speaker-dot"></div>
+          <div class="speaker-dot"></div>
+          <div class="speaker-dot"></div>
+          <div class="speaker-dot"></div>
+          <div class="speaker-dot"></div>
+          <div class="speaker-dot"></div>
+        </div>
+        <span class="mode-name">5.1</span>
+        <span class="mode-desc">Dolby / DTS</span>
+      </div>
+    </div>
+
+    <!-- Channel Level Meters -->
+    <div class="channel-levels">
+      <div class="channel ch-fl">
+        <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+        <span class="channel-label">FL</span>
+      </div>
+      <div class="channel ch-c">
+        <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+        <span class="channel-label">C</span>
+      </div>
+      <div class="channel ch-fr">
+        <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+        <span class="channel-label">FR</span>
+      </div>
+      <div class="channel ch-sl">
+        <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+        <span class="channel-label">SL</span>
+      </div>
+      <div class="channel ch-sr">
+        <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+        <span class="channel-label">SR</span>
+      </div>
+      <div class="channel ch-sub">
+        <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+        <span class="channel-label">SUB</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer / Zone -->
+  <div class="footer">
+    <span class="zone-label">Zone</span>
+    <div class="zone-toggle">
+      <div class="zone-pill active">MAIN</div>
+      <div class="zone-pill">ZONE 2</div>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

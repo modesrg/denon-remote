@@ -1,0 +1,41 @@
+@using DenonRemote.Constants
+@using DenonRemote.Services.Interfaces
+@inject IReceiverStateService StateService
+@inject DenonService Denon
+@implements IDisposable
+
+<div class="section">
+    <span class="section-label">Input</span>
+    <div class="input-grid">
+        @foreach (var (key, def) in Commands.Input.All)
+        {
+            var capturedKey = key;
+            var state    = StateService.CurrentState;
+            var isActive = state.Input.Equals(key, StringComparison.OrdinalIgnoreCase);
+            var label    = state.InputNames.TryGetValue(key, out var custom) ? custom : def.Label;
+
+            <button class="input-btn @(isActive ? "active" : "")"
+                    @onclick="() => Denon.SetInputAsync(capturedKey)">
+                <div class="input-btn-main">
+                    <span class="input-icon">@def.Icon</span>
+                    <span class="input-name">@label</span>
+                </div>
+                <span class="input-sub">@def.Sub</span>
+            </button>
+        }
+    </div>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        StateService.StateChanged += OnStateChanged;
+    }
+
+    private async void OnStateChanged(ReceiverState _)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => StateService.StateChanged -= OnStateChanged;
+}

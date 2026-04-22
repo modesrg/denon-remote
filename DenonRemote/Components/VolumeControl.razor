@@ -1,0 +1,68 @@
+@using DenonRemote.Services.Interfaces
+@inject IReceiverStateService StateService
+@inject DenonService Denon
+@implements IDisposable
+
+<div class="section">
+    <div class="volume-row">
+        <button class="vol-nudge" @onclick="() => Denon.VolumeDownAsync()">−</button>
+        <div class="volume-display" @onclick="ToggleScale">
+            <span class="volume-number">@VolumeDisplay</span>
+            <span class="volume-unit">@VolumeUnit</span>
+        </div>
+        <button class="vol-nudge" @onclick="() => Denon.VolumeUpAsync()">+</button>
+    </div>
+    <input type="range" class="volume-slider"
+           min="0" max="80" step="1"
+           value="@((int)(State.Volume + 80))"
+           style="--pct: @(VolumePct.ToString("F1"))%"
+           @onchange="OnSliderChange" />
+    <button class="mute-bar @(State.Muted ? "is-muted" : "")" @onclick="ToggleMute">
+        @if (State.Muted)
+        {
+            <span>✕ &nbsp;MUTED</span>
+        }
+        else
+        {
+            <span>MUTE</span>
+        }
+    </button>
+</div>
+
+@code {
+
+    private ReceiverState State => StateService.CurrentState;
+
+    private bool _showDb = false;
+
+    // Receiver reports MasterVolume as dB (e.g. -30.0); Denon scale = dB + 80
+    private string VolumeDisplay => _showDb
+        ? State.Volume.ToString("0.#")
+        : (State.Volume + 80).ToString("0.#");
+
+    private string VolumeUnit => _showDb ? "dB" : "/ 80";
+
+    private double VolumePct => Math.Clamp((State.Volume + 80) / 80.0 * 100.0, 0, 100);
+
+    private void ToggleScale() => _showDb = !_showDb;
+
+    private Task OnSliderChange(ChangeEventArgs e) =>
+        int.TryParse(e.Value?.ToString(), out var level)
+            ? Denon.SetVolumeAsync(level)
+            : Task.CompletedTask;
+
+    protected override void OnInitialized()
+    {
+        StateService.StateChanged += OnStateChanged;
+    }
+
+    private async void OnStateChanged(ReceiverState _)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private Task ToggleMute() =>
+        State.Muted ? Denon.MuteOffAsync() : Denon.MuteOnAsync();
+
+    public void Dispose() => StateService.StateChanged -= OnStateChanged;
+}

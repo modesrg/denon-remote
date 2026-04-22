@@ -1,0 +1,39 @@
+@using DenonRemote.Services.Interfaces
+@inject IReceiverStateService StateService
+@inject DenonService Denon
+@implements IDisposable
+
+<div class="header-right">
+    @if (!State.IsConnected)
+    {
+        <span class="offline-label">Offline</span>
+    }
+    <ThemeToggle />
+    <a href="/settings" class="theme-btn" title="Settings">⚙</a>
+    <button class="power-btn @(State.PowerOn ? "is-on" : "")" @onclick="TogglePower" title="Power">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" width="16" height="16">
+            <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64" />
+            <line x1="12" y1="2" x2="12" y2="12" />
+        </svg>
+    </button>
+</div>
+
+@code {
+    private ReceiverState State => StateService.CurrentState;
+
+    private Task TogglePower() =>
+        State.PowerOn ? Denon.PowerStandbyAsync() : Denon.PowerOnAsync();
+
+    protected override void OnInitialized()
+    {
+        StateService.StateChanged += OnStateChanged;
+    }
+
+    private async void OnStateChanged(ReceiverState _)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => StateService.StateChanged -= OnStateChanged;
+}

@@ -1,0 +1,80 @@
+@using DenonRemote.Services.Interfaces
+@inject IReceiverStateService StateService
+@inject DenonService Denon
+@implements IDisposable
+
+<div class="footer">
+    <div class="zone-row">
+        <span class="zone-label">Zone</span>
+        <div class="zone-toggle">
+            <button class="zone-pill active">MAIN</button>
+            <button class="zone-pill @(State.Zone2On ? "active" : "")"
+                    @onclick="ToggleZone2">
+                ZONE 2
+            </button>
+        </div>
+    </div>
+
+    @if (State.Zone2On)
+    {
+        <div class="zone2-volume">
+            <div class="zone2-vol-row">
+                <button class="vol-nudge" @onclick="() => Denon.Zone2VolumeDownAsync()">−</button>
+                <div class="zone2-vol-display">
+                    <span class="zone2-vol-number">@((State.Zone2Volume + 80).ToString("0.#"))</span>
+                    <span class="zone2-vol-unit">/ 80</span>
+                </div>
+                <button class="vol-nudge" @onclick="() => Denon.Zone2VolumeUpAsync()">+</button>
+            </div>
+            <input type="range" class="volume-slider"
+                   min="0" max="80" step="1"
+                   value="@((int)(State.Zone2Volume + 80))"
+                   style="--pct: @(Zone2Pct.ToString("F1"))%"
+                   @onchange="OnSliderChange" />
+        </div>
+
+        <div class="zone2-inputs">
+            <span class="section-label">Input</span>
+            <div class="input-grid">
+                @foreach (var key in Commands.Zone2.SafeInputs)
+                {
+                    var capturedKey = key;
+                    if (!Commands.Input.All.TryGetValue(key, out var def)) continue;
+                    var isActive = State.Zone2Input.Equals(key, StringComparison.OrdinalIgnoreCase);
+                    var label    = State.InputNames.TryGetValue(key, out var custom) ? custom : def.Label;
+
+                    <button class="input-btn @(isActive ? "active" : "")"
+                            @onclick="() => Denon.Zone2SetInputAsync(capturedKey)">
+                        <div class="input-btn-main">
+                            <span class="input-icon">@def.Icon</span>
+                            <span class="input-name">@label</span>
+                        </div>
+                        <span class="input-sub">@def.Sub</span>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private ReceiverState State => StateService.CurrentState;
+
+    private double Zone2Pct => Math.Clamp((State.Zone2Volume + 80) / 80.0 * 100.0, 0, 100);
+
+    private Task ToggleZone2() =>
+        State.Zone2On ? Denon.Zone2OffAsync() : Denon.Zone2OnAsync();
+
+    private Task OnSliderChange(ChangeEventArgs e) =>
+        int.TryParse(e.Value?.ToString(), out var level)
+            ? Denon.Zone2SetVolumeAsync(level)
+            : Task.CompletedTask;
+
+    protected override void OnInitialized() =>
+        StateService.StateChanged += OnStateChanged;
+
+    private async void OnStateChanged(ReceiverState _) =>
+        await InvokeAsync(StateHasChanged);
+
+    public void Dispose() => StateService.StateChanged -= OnStateChanged;
+}

@@ -1,0 +1,111 @@
+@page "/"
+@using DenonRemote.Constants
+@using DenonRemote.Services.Interfaces
+@rendermode InteractiveServer
+@inject IReceiverStateService StateService
+@implements IDisposable
+
+<div class="@ContainerClass">
+    <header class="header">
+        <div class="header-left">
+            <span class="brand">Denon</span>
+            <span class="model">@State.ModelName</span>
+        </div>
+        <PowerButton />
+    </header>
+
+    <VolumeControl />
+
+    <div class="tab-bar">
+        <div class="tab-pills">
+            <button class="tab-pill @(_activeTab == Tab.Input ? "active" : "")"
+                    @onclick="() => _activeTab = Tab.Input">
+                Input@(InputHint is { } ih ? $" · {ih}" : "")
+            </button>
+            <button class="tab-pill @(_activeTab == Tab.SoundMode ? "active" : "")"
+                    @onclick="() => _activeTab = Tab.SoundMode">
+                Sound@(SoundHint is { } sh ? $" · {sh}" : "")
+            </button>
+            <button class="tab-pill @(_activeTab == Tab.Speakers ? "active" : "")"
+                    @onclick="() => _activeTab = Tab.Speakers">
+                Speakers
+            </button>
+            <button class="tab-pill @(_activeTab == Tab.Actions ? "active" : "")"
+                    @onclick="() => _activeTab = Tab.Actions">
+                Actions
+            </button>
+
+        </div>
+    </div>
+
+    <div class="tab-content"
+         @ontouchstart="OnTouchStart"
+         @ontouchend="OnTouchEnd">
+        @if (_activeTab == Tab.Input)
+        {
+            <InputSelector />
+        }
+        else if (_activeTab == Tab.SoundMode)
+        {
+            <SoundModeSelector />
+        }
+        else if (_activeTab == Tab.Speakers)
+        {
+            <SignalInfo />
+        }
+        else
+        {
+            <MacroPanel />
+        }
+    </div>
+
+    <ZoneToggle />
+</div>
+
+@code {
+    private enum Tab { Input, SoundMode, Speakers, Actions }
+    private Tab _activeTab = Tab.Input;
+
+    private double _touchStartX;
+
+    private void OnTouchStart(TouchEventArgs e) =>
+        _touchStartX = e.ChangedTouches[0].ClientX;
+
+    private void OnTouchEnd(TouchEventArgs e)
+    {
+        var delta = e.ChangedTouches[0].ClientX - _touchStartX;
+        if (Math.Abs(delta) < 50) return;
+        var tabs = Enum.GetValues<Tab>();
+        var idx = Array.IndexOf(tabs, _activeTab);
+        if (delta < 0 && idx < tabs.Length - 1) _activeTab = tabs[idx + 1]; // swipe left → next
+        if (delta > 0 && idx > 0)               _activeTab = tabs[idx - 1]; // swipe right → prev
+    }
+
+    private ReceiverState State => StateService.CurrentState;
+
+    private string? InputHint =>
+        string.IsNullOrEmpty(State.Input) ? null :
+        Commands.Input.All.TryGetValue(State.Input, out var def) ? def.Label : State.Input;
+
+    private string? SoundHint =>
+        string.IsNullOrEmpty(State.SoundMode) ? null : State.SoundMode;
+
+    private string ContainerClass => State switch
+    {
+        { IsConnected: false } => "container offline",
+        { PowerOn: false }     => "container receiver-off",
+        _                      => "container"
+    };
+
+    protected override void OnInitialized()
+    {
+        StateService.StateChanged += OnStateChanged;
+    }
+
+    private async void OnStateChanged(ReceiverState _)
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => StateService.StateChanged -= OnStateChanged;
+}

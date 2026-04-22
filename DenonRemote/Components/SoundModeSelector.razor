@@ -1,0 +1,149 @@
+@using DenonRemote.Constants
+@using DenonRemote.Services.Interfaces
+@inject IReceiverStateService StateService
+@inject DenonService Denon
+@implements IDisposable
+
+<div class="section">
+    <span class="section-label">Sound Mode</span>
+
+    <button class="auto-btn @(IsAutoActive ? "active" : "")"
+            @onclick="SelectAuto">
+        <div class="auto-btn-left">
+            <span class="auto-btn-label">AUTO</span>
+            <span class="auto-btn-desc">Receiver selects the best mode for the signal</span>
+        </div>
+        @if (IsAutoActive)
+        {
+            <span class="auto-badge">active</span>
+        }
+    </button>
+
+    <div class="mode-tabs">
+        <button class="mode-btn @(_family == SoundFamily.Stereo ? "active" : "")"
+                @onclick="() => SelectFamily(SoundFamily.Stereo)">
+            <div class="mode-icon stereo">
+                <div class="speaker-dot"></div>
+                <div class="speaker-dot"></div>
+            </div>
+            <span class="mode-name">STEREO</span>
+            <span class="mode-desc">Pure 2.0</span>
+        </button>
+        <button class="mode-btn @(_family == SoundFamily.Surround ? "active" : "")"
+                @onclick="() => SelectFamily(SoundFamily.Surround)">
+            <div class="mode-icon surround">
+                <div class="speaker-dot"></div>
+                <div class="speaker-dot"></div>
+                <div class="speaker-dot"></div>
+                <div class="speaker-dot"></div>
+                <div class="speaker-dot"></div>
+                <div class="speaker-dot"></div>
+            </div>
+            <span class="mode-name">SURROUND</span>
+            <span class="mode-desc">Dolby / DTS</span>
+        </button>
+    </div>
+
+    <div class="sub-mode-grid">
+        @foreach (var (key, def) in Commands.SoundMode.All.Where(kv => kv.Value.Family == _family))
+        {
+            var capturedKey = key;
+            <button class="sub-mode-btn @(IsActive(capturedKey) ? "active" : "")"
+                    @onclick="() => SelectMode(capturedKey)">
+                <span class="sub-mode-label">@def.Label</span>
+                <span class="info-toggle @(_infoKey == capturedKey ? "open" : "")"
+                      @onclick="() => ToggleInfo(capturedKey)"
+                      @onclick:stopPropagation>ⓘ</span>
+            </button>
+        }
+    </div>
+
+    @if (_infoKey is not null && Commands.SoundMode.All.TryGetValue(_infoKey, out var infoDef))
+    {
+        <div class="mode-info-panel">@infoDef.Description</div>
+    }
+
+@*     <div class="channel-levels">
+        <div class="channel ch-fl">
+            <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+            <span class="channel-label">FL</span>
+        </div>
+        <div class="channel ch-c">
+            <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+            <span class="channel-label">C</span>
+        </div>
+        <div class="channel ch-fr">
+            <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+            <span class="channel-label">FR</span>
+        </div>
+        <div class="channel ch-sl">
+            <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+            <span class="channel-label">SL</span>
+        </div>
+        <div class="channel ch-sr">
+            <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+            <span class="channel-label">SR</span>
+        </div>
+        <div class="channel ch-sub">
+            <div class="channel-bar"><div class="channel-bar-fill"></div></div>
+            <span class="channel-label">SUB</span>
+        </div>
+    </div> *@
+</div>
+
+@code {
+    private SoundFamily _family  = SoundFamily.Stereo;
+    private string?     _infoKey = null;
+
+    private string Mode         => StateService.CurrentState.SoundMode;
+    private bool   IsAutoActive => Mode.Equals(Commands.SoundMode.Auto, StringComparison.OrdinalIgnoreCase);
+    private bool   IsActive(string key) => Mode.Equals(key, StringComparison.OrdinalIgnoreCase);
+
+    private void SelectAuto()
+    {
+        _infoKey = null;
+        Denon.SetSoundModeAsync(Commands.SoundMode.Auto);
+    }
+
+    private void SelectMode(string key)
+    {
+        _infoKey = null;
+        Denon.SetSoundModeAsync(key);
+    }
+
+    private void ToggleInfo(string key) =>
+        _infoKey = _infoKey == key ? null : key;
+
+    private void SelectFamily(SoundFamily family)
+    {
+        _family  = family;
+        _infoKey = null;
+        if (!Commands.SoundMode.All.Any(kv => kv.Value.Family == family && IsActive(kv.Key)))
+        {
+            var firstKey = Commands.SoundMode.All
+                .FirstOrDefault(kv => kv.Value.Family == family).Key;
+            if (firstKey is not null)
+                Denon.SetSoundModeAsync(firstKey);
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        StateService.StateChanged += OnStateChanged;
+        SyncFamilyFromState();
+    }
+
+    private void SyncFamilyFromState()
+    {
+        if (Commands.SoundMode.All.TryGetValue(Mode, out var def))
+            _family = def.Family;
+    }
+
+    private async void OnStateChanged(ReceiverState _)
+    {
+        SyncFamilyFromState();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => StateService.StateChanged -= OnStateChanged;
+}

@@ -1,0 +1,34 @@
+@using Microsoft.JSInterop
+@inject ThemeService ThemeService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<button class="theme-btn" @onclick="Toggle" title="Toggle theme">
+    @(ThemeService.Current == Theme.Modern ? "◑" : "○")
+</button>
+
+@code {
+    private async Task Toggle()
+    {
+        ThemeService.Toggle();
+        await JS.InvokeVoidAsync("theme.set", ThemeService.CssName);
+    }
+
+    protected override void OnInitialized() =>
+        ThemeService.ThemeChanged += OnThemeChanged;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+        var saved = await JS.InvokeAsync<string>("theme.get");
+        var theme = saved == "subtle" ? Theme.Subtle : Theme.Modern;
+        if (theme != ThemeService.Current)
+            ThemeService.Set(theme);
+    }
+
+    private async void OnThemeChanged() =>
+        await InvokeAsync(StateHasChanged);
+
+    public void Dispose() =>
+        ThemeService.ThemeChanged -= OnThemeChanged;
+}

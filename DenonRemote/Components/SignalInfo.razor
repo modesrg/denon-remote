@@ -1,0 +1,31 @@
+@using DenonRemote.Services.Interfaces
+@inject IReceiverStateService StateService
+@implements IDisposable
+
+<div class="section signal-info">
+    <div class="signal-row">
+        <div class="signal-card">
+            <span class="signal-card-label">INPUT SIGNAL</span>
+            <span class="signal-card-value">@(string.IsNullOrEmpty(State.SignalChannels) ? "—" : State.SignalChannels)</span>
+            <span class="signal-card-sub">@(string.IsNullOrEmpty(State.SignalFormat) ? "—" : State.SignalFormat)</span>
+        </div>
+        <div class="signal-arrow">→</div>
+        <div class="signal-card">
+            <span class="signal-card-label">OUTPUT</span>
+            <span class="signal-card-value">@(string.IsNullOrEmpty(State.OutputChannels) ? "—" : State.OutputChannels)</span>
+            <span class="signal-card-sub">@State.SoundMode</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ReceiverState State => StateService.CurrentState;
+
+    protected override void OnInitialized() =>
+        StateService.StateChanged += OnStateChanged;
+
+    private async void OnStateChanged(ReceiverState _) =>
+        await InvokeAsync(StateHasChanged);
+
+    public void Dispose() => StateService.StateChanged -= OnStateChanged;
+}
