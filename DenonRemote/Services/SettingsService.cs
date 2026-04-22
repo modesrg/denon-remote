@@ -1,9 +1,10 @@
 using DenonRemote.Models;
+using DenonRemote.Services.Interfaces;
 using System.Text.Json;
 
 namespace DenonRemote.Services;
 
-public sealed class SettingsService
+public sealed class SettingsService : ISettingsService
 {
     private readonly string _filePath;
     private readonly IConfiguration _config;

@@ -1,4 +1,4 @@
-using DenonRemote.Services;
+using DenonRemote.Services.Interfaces;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -7,10 +7,10 @@ namespace DenonRemote.Clients;
 
 public sealed class TelnetClient : ITelnetClient
 {
-    private readonly SettingsService _settings;
+    private readonly ISettingsService _settings;
     private TcpClient? _tcp;
 
-    public TelnetClient(SettingsService settings)
+    public TelnetClient(ISettingsService settings)
     {
         _settings = settings;
     }

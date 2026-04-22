@@ -1,8 +1,8 @@
+using DenonRemote.Services.Interfaces;
+
 namespace DenonRemote.Services;
 
-public enum Theme { Modern, Subtle }
-
-public sealed class ThemeService
+public sealed class ThemeService : IThemeService
 {
     public Theme Current { get; private set; } = Theme.Modern;
     public event Action? ThemeChanged;

@@ -17,7 +17,7 @@ public sealed class TelnetService : BackgroundService, IReceiverStateService
     public event Action<ReceiverState>? StateChanged;
 
     public TelnetService(ITelnetClient telnet, IDenonClient http,
-                         ILogger<TelnetService> logger, SettingsService settings)
+                         ILogger<TelnetService> logger, ISettingsService settings)
     {
         _telnet = telnet;
         _http = http;

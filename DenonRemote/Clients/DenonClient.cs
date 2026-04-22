@@ -1,13 +1,13 @@
-using DenonRemote.Services;
+using DenonRemote.Services.Interfaces;
 
 namespace DenonRemote.Clients;
 
 public class DenonClient : IDenonClient
 {
     private readonly HttpClient _http;
-    private readonly SettingsService _settings;
+    private readonly ISettingsService _settings;
 
-    public DenonClient(HttpClient http, SettingsService settings)
+    public DenonClient(HttpClient http, ISettingsService settings)
     {
         _http = http;
         _settings = settings;

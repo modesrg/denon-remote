@@ -1,11 +1,12 @@
 using DenonRemote.Clients;
 using DenonRemote.Constants;
 using DenonRemote.Models;
+using DenonRemote.Services.Interfaces;
 using System.Xml.Linq;
 
 namespace DenonRemote.Services;
 
-public class DenonService
+public class DenonService : IDenonService
 {
     private readonly IDenonClient _client;
 

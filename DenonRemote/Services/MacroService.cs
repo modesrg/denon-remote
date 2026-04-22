@@ -1,9 +1,10 @@
 using DenonRemote.Clients;
 using DenonRemote.Models;
+using DenonRemote.Services.Interfaces;
 
 namespace DenonRemote.Services;
 
-public sealed class MacroService
+public sealed class MacroService : IMacroService
 {
     private readonly IDenonClient _client;
     private readonly IReadOnlyList<MacroDefinition> _macros;
