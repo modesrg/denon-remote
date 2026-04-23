@@ -1,14 +1,9 @@
-using System.Net;
 using DenonRemote;
 using DenonRemote.Clients;
 using DenonRemote.Services;
 using DenonRemote.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
-
-var appPort = builder.Configuration.GetValue<int>("App:Port", 5544);
-builder.WebHost.ConfigureKestrel(options =>
-    options.Listen(IPAddress.Any, appPort));
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -29,7 +24,10 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    app.UseHsts();
 }
+
+app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
